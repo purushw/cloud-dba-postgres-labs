@@ -1,0 +1,70 @@
+                                              QUERY PLAN                                              
+------------------------------------------------------------------------------------------------------
+ Seq Scan on films  (cost=0.00..220.00 rows=101 width=42) (actual time=0.032..2.913 rows=280 loops=1)
+   Filter: (title ~~* '%99%'::text)
+   Rows Removed by Filter: 9720
+ Planning Time: 0.181 ms
+ Execution Time: 2.941 ms
+(5 rows)
+
+                                                             QUERY PLAN                                                             
+------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=6620.30..6685.40 rows=26040 width=40) (actual time=27.313..28.574 rows=25939 loops=1)
+   Sort Key: r.rented_at DESC
+   Sort Method: quicksort  Memory: 2592kB
+   ->  Hash Join  (cost=449.64..4710.47 rows=26040 width=40) (actual time=1.668..23.322 rows=25939 loops=1)
+         Hash Cond: (r.film_id = f.film_id)
+         ->  Hash Join  (cost=129.64..4322.08 rows=26040 width=35) (actual time=0.374..19.488 rows=25939 loops=1)
+               Hash Cond: (r.customer_id = c.customer_id)
+               ->  Seq Scan on rentals r  (cost=0.00..3667.00 rows=200000 width=22) (actual time=0.002..7.699 rows=200000 loops=1)
+               ->  Hash  (cost=121.50..121.50 rows=651 width=21) (actual time=0.364..0.364 rows=651 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 44kB
+                     ->  Seq Scan on customers c  (cost=0.00..121.50 rows=651 width=21) (actual time=0.003..0.307 rows=651 loops=1)
+                           Filter: (city = 'Brisbane'::text)
+                           Rows Removed by Filter: 4349
+         ->  Hash  (cost=195.00..195.00 rows=10000 width=13) (actual time=1.255..1.255 rows=10000 loops=1)
+               Buckets: 16384  Batches: 1  Memory Usage: 597kB
+               ->  Seq Scan on films f  (cost=0.00..195.00 rows=10000 width=13) (actual time=0.001..0.521 rows=10000 loops=1)
+ Planning Time: 0.283 ms
+ Execution Time: 29.090 ms
+(18 rows)
+
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+                                                                      QUERY PLAN                                                                       
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=6575.27..6640.37 rows=26040 width=40) (actual time=19.321..20.153 rows=25939 loops=1)
+   Sort Key: r.rented_at DESC
+   Sort Method: quicksort  Memory: 2592kB
+   ->  Hash Join  (cost=404.60..4665.44 rows=26040 width=40) (actual time=0.966..16.595 rows=25939 loops=1)
+         Hash Cond: (r.film_id = f.film_id)
+         ->  Hash Join  (cost=84.60..4277.05 rows=26040 width=35) (actual time=0.144..13.978 rows=25939 loops=1)
+               Hash Cond: (r.customer_id = c.customer_id)
+               ->  Seq Scan on rentals r  (cost=0.00..3667.00 rows=200000 width=22) (actual time=0.002..5.544 rows=200000 loops=1)
+               ->  Hash  (cost=76.47..76.47 rows=651 width=21) (actual time=0.138..0.138 rows=651 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 44kB
+                     ->  Bitmap Heap Scan on customers c  (cost=9.33..76.47 rows=651 width=21) (actual time=0.028..0.104 rows=651 loops=1)
+                           Recheck Cond: (city = 'Brisbane'::text)
+                           Heap Blocks: exact=59
+                           ->  Bitmap Index Scan on idx_customers_city  (cost=0.00..9.17 rows=651 width=0) (actual time=0.021..0.021 rows=651 loops=1)
+                                 Index Cond: (city = 'Brisbane'::text)
+         ->  Hash  (cost=195.00..195.00 rows=10000 width=13) (actual time=0.819..0.819 rows=10000 loops=1)
+               Buckets: 16384  Batches: 1  Memory Usage: 597kB
+               ->  Seq Scan on films f  (cost=0.00..195.00 rows=10000 width=13) (actual time=0.001..0.379 rows=10000 loops=1)
+ Planning Time: 0.247 ms
+ Execution Time: 20.560 ms
+(20 rows)
+
+ schemaname | tablename |        indexname        |                                     indexdef                                      
+------------+-----------+-------------------------+-----------------------------------------------------------------------------------
+ public     | customers | customers_pkey          | CREATE UNIQUE INDEX customers_pkey ON public.customers USING btree (customer_id)
+ public     | customers | idx_customers_city      | CREATE INDEX idx_customers_city ON public.customers USING btree (city)
+ public     | films     | films_pkey              | CREATE UNIQUE INDEX films_pkey ON public.films USING btree (film_id)
+ public     | rentals   | idx_rentals_customer_id | CREATE INDEX idx_rentals_customer_id ON public.rentals USING btree (customer_id)
+ public     | rentals   | idx_rentals_film_id     | CREATE INDEX idx_rentals_film_id ON public.rentals USING btree (film_id)
+ public     | rentals   | idx_rentals_rented_at   | CREATE INDEX idx_rentals_rented_at ON public.rentals USING btree (rented_at DESC)
+ public     | rentals   | rentals_pkey            | CREATE UNIQUE INDEX rentals_pkey ON public.rentals USING btree (rental_id)
+(7 rows)
+
