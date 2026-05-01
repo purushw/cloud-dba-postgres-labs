@@ -259,3 +259,161 @@ dropped and ran the query twice
  Planning Time: 0.727 ms
  Execution Time: 49.411 ms
 (31 rows)
+--------------------------
+
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT c.first_name, c.last_name, f.title, r.rented_at, r.amount
+FROM rentals r
+JOIN customers c ON r.customer_id = c.customer_id
+JOIN films f ON r.film_id = f.film_id
+WHERE c.city = 'Brisbane'
+ORDER BY r.rented_at DESC;
+
+   Sort Method: quicksort  Memory: 2592kB
+   Buffers: shared hit=1827
+   ->  Hash Join  (cost=404.60..4665.44 rows=26040 width=40) (actual time=3.966..46.681 rows=25939 loops=1)
+         Hash Cond: (r.film_id = f.film_id)
+         Buffers: shared hit=1824
+         ->  Hash Join  (cost=84.60..4277.05 rows=26040 width=35) (actual time=0.989..37.858 rows=25939 loops=1)
+               Hash Cond: (r.customer_id = c.customer_id)
+               Buffers: shared hit=1729
+               ->  Seq Scan on rentals r  (cost=0.00..3667.00 rows=200000 width=22) (actual time=0.011..17.748 rows=200000 loops=1)
+                     Buffers: shared hit=1667
+               ->  Hash  (cost=76.47..76.47 rows=651 width=21) (actual time=0.964..0.965 rows=651 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 44kB
+                     Buffers: shared hit=62
+                     ->  Bitmap Heap Scan on customers c  (cost=9.33..76.47 rows=651 width=21) (actual time=0.092..0.812 rows=651 loops=1)
+                           Recheck Cond: (city = 'Brisbane'::text)
+                           Heap Blocks: exact=59
+                           Buffers: shared hit=62
+                           ->  Bitmap Index Scan on idx_customers_city  (cost=0.00..9.17 rows=651 width=0) (actual time=0.076..0.076 rows=651 loops=1)
+                                 Index Cond: (city = 'Brisbane'::text)
+                                 Buffers: shared hit=3
+         ->  Hash  (cost=195.00..195.00 rows=10000 width=13) (actual time=2.919..2.919 rows=10000 loops=1)
+               Buckets: 16384  Batches: 1  Memory Usage: 597kB
+               Buffers: shared hit=95
+               ->  Seq Scan on films f  (cost=0.00..195.00 rows=10000 width=13) (actual time=0.004..1.595 rows=10000 loops=1)
+                     Buffers: shared hit=95
+ Planning:
+   Buffers: shared hit=358
+ Planning Time: 2.288 ms
+ Execution Time: 54.729 ms
+
+## Refined understanding
+
+The composite index on (customer_id, rented_at DESC) did not significantly improve performance.
+
+Reasons:
+- The query returns a relatively large result set (many Brisbane customers and rentals)
+- The index does not sufficiently reduce the number of rows processed
+- Sorting is still required across a large dataset
+- All data was already in memory (shared buffers), so disk I/O was not a factor
+
+Conclusion:
+Indexes are most effective when they significantly reduce the working set size or eliminate expensive operations (e.g. large sorts). In this case, neither condition was strongly met.
+(31 rows)
+
+(END)
+
+   Sort Method: quicksort  Memory: 2592kB
+   Buffers: shared hit=1824
+   ->  Hash Join  (cost=404.60..4665.44 rows=26040 width=40) (actual time=4.046..41.116 rows=25939 loops=1)
+         Hash Cond: (r.film_id = f.film_id)
+         Buffers: shared hit=1824
+         ->  Hash Join  (cost=84.60..4277.05 rows=26040 width=35) (actual time=0.534..31.063 rows=25939 loops=1)
+               Hash Cond: (r.customer_id = c.customer_id)
+               Buffers: shared hit=1729
+               ->  Seq Scan on rentals r  (cost=0.00..3667.00 rows=200000 width=22) (actual time=0.006..11.907 rows=200000 loops=1)
+                     Buffers: shared hit=1667
+               ->  Hash  (cost=76.47..76.47 rows=651 width=21) (actual time=0.514..0.515 rows=651 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 44kB
+                     Buffers: shared hit=62
+                     ->  Bitmap Heap Scan on customers c  (cost=9.33..76.47 rows=651 width=21) (actual time=0.054..0.393 rows=651 loops=1)
+                           Recheck Cond: (city = 'Brisbane'::text)
+                           Heap Blocks: exact=59
+                           Buffers: shared hit=62
+                           ->  Bitmap Index Scan on idx_customers_city  (cost=0.00..9.17 rows=651 width=0) (actual time=0.038..0.038 rows=651 loops=1)
+                                 Index Cond: (city = 'Brisbane'::text)
+                                 Buffers: shared hit=3
+         ->  Hash  (cost=195.00..195.00 rows=10000 width=13) (actual time=3.490..3.491 rows=10000 loops=1)
+               Buckets: 16384  Batches: 1  Memory Usage: 597kB
+               Buffers: shared hit=95
+               ->  Seq Scan on films f  (cost=0.00..195.00 rows=10000 width=13) (actual time=0.005..1.443 rows=10000 loops=1)
+                     Buffers: shared hit=95
+ Planning:
+   Buffers: shared hit=31 dirtied=1
+ Planning Time: 0.652 ms
+ Execution Time: 50.786 ms
+(31 rows)
+
+(END)
+
+   Sort Method: quicksort  Memory: 2592kB
+   Buffers: shared hit=1824
+   ->  Hash Join  (cost=404.60..4665.44 rows=26040 width=40) (actual time=2.890..39.525 rows=25939 loops=1)
+         Hash Cond: (r.film_id = f.film_id)
+         Buffers: shared hit=1824
+         ->  Hash Join  (cost=84.60..4277.05 rows=26040 width=35) (actual time=0.558..30.834 rows=25939 loops=1)
+               Hash Cond: (r.customer_id = c.customer_id)
+               Buffers: shared hit=1729
+               ->  Seq Scan on rentals r  (cost=0.00..3667.00 rows=200000 width=22) (actual time=0.010..11.719 rows=200000 loops=1)
+                     Buffers: shared hit=1667
+               ->  Hash  (cost=76.47..76.47 rows=651 width=21) (actual time=0.506..0.507 rows=651 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 44kB
+                     Buffers: shared hit=62
+                     ->  Bitmap Heap Scan on customers c  (cost=9.33..76.47 rows=651 width=21) (actual time=0.110..0.405 rows=651 loops=1)
+                           Recheck Cond: (city = 'Brisbane'::text)
+                           Heap Blocks: exact=59
+                           Buffers: shared hit=62
+                           ->  Bitmap Index Scan on idx_customers_city  (cost=0.00..9.17 rows=651 width=0) (actual time=0.053..0.053 rows=651 loops=1)
+                                 Index Cond: (city = 'Brisbane'::text)
+                                 Buffers: shared hit=3
+         ->  Hash  (cost=195.00..195.00 rows=10000 width=13) (actual time=2.309..2.309 rows=10000 loops=1)
+               Buckets: 16384  Batches: 1  Memory Usage: 597kB
+               Buffers: shared hit=95
+               ->  Seq Scan on films f  (cost=0.00..195.00 rows=10000 width=13) (actual time=0.015..1.038 rows=10000 loops=1)
+                     Buffers: shared hit=95
+ Planning:
+   Buffers: shared hit=24
+ Planning Time: 0.596 ms
+ Execution Time: 48.005 ms
+(31 rows)
+
+(END)
+
+CREATE INDEX idx_rentals_customer_date
+ON rentals(customer_id, rented_at DESC);
+-----
+
+   Sort Method: quicksort  Memory: 2592kB
+   Buffers: shared hit=1824
+   ->  Hash Join  (cost=404.60..4665.44 rows=26040 width=40) (actual time=3.378..40.901 rows=25939 loops=1)
+         Hash Cond: (r.film_id = f.film_id)
+         Buffers: shared hit=1824
+         ->  Hash Join  (cost=84.60..4277.05 rows=26040 width=35) (actual time=0.562..31.960 rows=25939 loops=1)
+               Hash Cond: (r.customer_id = c.customer_id)
+               Buffers: shared hit=1729
+               ->  Seq Scan on rentals r  (cost=0.00..3667.00 rows=200000 width=22) (actual time=0.007..12.346 rows=200000 loops=1)
+                     Buffers: shared hit=1667
+               ->  Hash  (cost=76.47..76.47 rows=651 width=21) (actual time=0.542..0.543 rows=651 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 44kB
+                     Buffers: shared hit=62
+                     ->  Bitmap Heap Scan on customers c  (cost=9.33..76.47 rows=651 width=21) (actual time=0.071..0.406 rows=651 loops=1)
+                           Recheck Cond: (city = 'Brisbane'::text)
+                           Heap Blocks: exact=59
+                           Buffers: shared hit=62
+                           ->  Bitmap Index Scan on idx_customers_city  (cost=0.00..9.17 rows=651 width=0) (actual time=0.052..0.053 rows=651 loops=1)
+                                 Index Cond: (city = 'Brisbane'::text)
+                                 Buffers: shared hit=3
+         ->  Hash  (cost=195.00..195.00 rows=10000 width=13) (actual time=2.795..2.796 rows=10000 loops=1)
+               Buckets: 16384  Batches: 1  Memory Usage: 597kB
+               Buffers: shared hit=95
+               ->  Seq Scan on films f  (cost=0.00..195.00 rows=10000 width=13) (actual time=0.005..1.255 rows=10000 loops=1)
+                     Buffers: shared hit=95
+ Planning:
+   Buffers: shared hit=41 read=6
+ Planning Time: 1.033 ms
+ Execution Time: 48.128 ms
+(31 rows)
+
+(END)
