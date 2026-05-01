@@ -68,3 +68,194 @@ CREATE INDEX
  public     | rentals   | rentals_pkey            | CREATE UNIQUE INDEX rentals_pkey ON public.rentals USING btree (rental_id)
 (7 rows)
 
+                                                                      QUERY PLAN                                                                       
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=6575.27..6640.37 rows=26040 width=40) (actual time=47.136..48.974 rows=25939 loops=1)
+   Sort Key: r.rented_at DESC
+   Sort Method: quicksort  Memory: 2592kB
+   ->  Hash Join  (cost=404.60..4665.44 rows=26040 width=40) (actual time=3.135..40.619 rows=25939 loops=1)
+         Hash Cond: (r.film_id = f.film_id)
+         ->  Hash Join  (cost=84.60..4277.05 rows=26040 width=35) (actual time=0.491..32.329 rows=25939 loops=1)
+               Hash Cond: (r.customer_id = c.customer_id)
+               ->  Seq Scan on rentals r  (cost=0.00..3667.00 rows=200000 width=22) (actual time=0.007..12.963 rows=200000 loops=1)
+               ->  Hash  (cost=76.47..76.47 rows=651 width=21) (actual time=0.469..0.471 rows=651 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 44kB
+                     ->  Bitmap Heap Scan on customers c  (cost=9.33..76.47 rows=651 width=21) (actual time=0.054..0.361 rows=651 loops=1)
+                           Recheck Cond: (city = 'Brisbane'::text)
+                           Heap Blocks: exact=59
+                           ->  Bitmap Index Scan on idx_customers_city  (cost=0.00..9.17 rows=651 width=0) (actual time=0.037..0.037 rows=651 loops=1)
+                                 Index Cond: (city = 'Brisbane'::text)
+         ->  Hash  (cost=195.00..195.00 rows=10000 width=13) (actual time=2.628..2.629 rows=10000 loops=1)
+               Buckets: 16384  Batches: 1  Memory Usage: 597kB
+               ->  Seq Scan on films f  (cost=0.00..195.00 rows=10000 width=13) (actual time=0.006..1.281 rows=10000 loops=1)
+ Planning Time: 0.513 ms
+ Execution Time: 49.859 ms
+(20 rows)
+
+ schemaname | tablename |         indexname         |                                              indexdef                                              
+------------+-----------+---------------------------+----------------------------------------------------------------------------------------------------
+ public     | customers | customers_pkey            | CREATE UNIQUE INDEX customers_pkey ON public.customers USING btree (customer_id)
+ public     | customers | idx_customers_city        | CREATE INDEX idx_customers_city ON public.customers USING btree (city)
+ public     | films     | films_pkey                | CREATE UNIQUE INDEX films_pkey ON public.films USING btree (film_id)
+ public     | rentals   | idx_rentals_customer_date | CREATE INDEX idx_rentals_customer_date ON public.rentals USING btree (customer_id, rented_at DESC)
+ public     | rentals   | idx_rentals_customer_id   | CREATE INDEX idx_rentals_customer_id ON public.rentals USING btree (customer_id)
+ public     | rentals   | idx_rentals_film_id       | CREATE INDEX idx_rentals_film_id ON public.rentals USING btree (film_id)
+ public     | rentals   | idx_rentals_rented_at     | CREATE INDEX idx_rentals_rented_at ON public.rentals USING btree (rented_at DESC)
+ public     | rentals   | rentals_pkey              | CREATE UNIQUE INDEX rentals_pkey ON public.rentals USING btree (rental_id)
+(8 rows)
+
+                                                                      QUERY PLAN                                                             
+          
+---------------------------------------------------------------------------------------------------------------------------------------------
+----------
+ Sort  (cost=6575.27..6640.37 rows=26040 width=40) (actual time=47.078..48.308 rows=25939 loops=1)
+   Sort Key: r.rented_at DESC
+   Sort Method: quicksort  Memory: 2592kB
+   ->  Hash Join  (cost=404.60..4665.44 rows=26040 width=40) (actual time=3.239..40.312 rows=25939 loops=1)
+         Hash Cond: (r.film_id = f.film_id)
+         ->  Hash Join  (cost=84.60..4277.05 rows=26040 width=35) (actual time=0.428..31.683 rows=25939 loops=1)
+               Hash Cond: (r.customer_id = c.customer_id)
+               ->  Seq Scan on rentals r  (cost=0.00..3667.00 rows=200000 width=22) (actual time=0.006..12.622 rows=200000 loops=1)
+               ->  Hash  (cost=76.47..76.47 rows=651 width=21) (actual time=0.411..0.412 rows=651 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 44kB
+                     ->  Bitmap Heap Scan on customers c  (cost=9.33..76.47 rows=651 width=21) (actual time=0.049..0.318 rows=651 loops=1)
+                           Recheck Cond: (city = 'Brisbane'::text)
+                           Heap Blocks: exact=59
+                           ->  Bitmap Index Scan on idx_customers_city  (cost=0.00..9.17 rows=651 width=0) (actual time=0.034..0.034 rows=651 loops=1)
+                                 Index Cond: (city = 'Brisbane'::text)
+         ->  Hash  (cost=195.00..195.00 rows=10000 width=13) (actual time=2.793..2.794 rows=10000 loops=1)
+               Buckets: 16384  Batches: 1  Memory Usage: 597kB
+               ->  Seq Scan on films f  (cost=0.00..195.00 rows=10000 width=13) (actual time=0.003..1.355 rows=10000 loops=1)
+ Planning Time: 0.592 ms
+ Execution Time: 49.025 ms
+(20 rows)
+
+-----
+dropped and ran the query twice
+                                                                      QUERY PLAN                                                                       
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=6575.27..6640.37 rows=26040 width=40) (actual time=35.948..36.954 rows=25939 loops=1)
+   Sort Key: r.rented_at DESC
+   Sort Method: quicksort  Memory: 2592kB
+   ->  Hash Join  (cost=404.60..4665.44 rows=26040 width=40) (actual time=3.689..31.377 rows=25939 loops=1)
+         Hash Cond: (r.film_id = f.film_id)
+         ->  Hash Join  (cost=84.60..4277.05 rows=26040 width=35) (actual time=0.663..23.747 rows=25939 loops=1)
+               Hash Cond: (r.customer_id = c.customer_id)
+               ->  Seq Scan on rentals r  (cost=0.00..3667.00 rows=200000 width=22) (actual time=0.006..9.378 rows=200000 loops=1)
+               ->  Hash  (cost=76.47..76.47 rows=651 width=21) (actual time=0.624..0.625 rows=651 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 44kB
+                     ->  Bitmap Heap Scan on customers c  (cost=9.33..76.47 rows=651 width=21) (actual time=0.068..0.422 rows=651 loops=1)
+                           Recheck Cond: (city = 'Brisbane'::text)
+                           Heap Blocks: exact=59
+                           ->  Bitmap Index Scan on idx_customers_city  (cost=0.00..9.17 rows=651 width=0) (actual time=0.047..0.047 rows=651 loops=1)
+                                 Index Cond: (city = 'Brisbane'::text)
+         ->  Hash  (cost=195.00..195.00 rows=10000 width=13) (actual time=3.007..3.007 rows=10000 loops=1)
+               Buckets: 16384  Batches: 1  Memory Usage: 597kB
+               ->  Seq Scan on films f  (cost=0.00..195.00 rows=10000 width=13) (actual time=0.009..1.443 rows=10000 loops=1)
+ Planning Time: 0.534 ms
+ Execution Time: 37.530 ms
+(20 rows)
+
+                                                                      QUERY PLAN                                                                       
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=6575.27..6640.37 rows=26040 width=40) (actual time=44.228..45.416 rows=25939 loops=1)
+   Sort Key: r.rented_at DESC
+   Sort Method: quicksort  Memory: 2592kB
+   ->  Hash Join  (cost=404.60..4665.44 rows=26040 width=40) (actual time=3.096..38.152 rows=25939 loops=1)
+         Hash Cond: (r.film_id = f.film_id)
+         ->  Hash Join  (cost=84.60..4277.05 rows=26040 width=35) (actual time=0.561..30.003 rows=25939 loops=1)
+               Hash Cond: (r.customer_id = c.customer_id)
+               ->  Seq Scan on rentals r  (cost=0.00..3667.00 rows=200000 width=22) (actual time=0.006..11.806 rows=200000 loops=1)
+               ->  Hash  (cost=76.47..76.47 rows=651 width=21) (actual time=0.540..0.542 rows=651 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 44kB
+                     ->  Bitmap Heap Scan on customers c  (cost=9.33..76.47 rows=651 width=21) (actual time=0.053..0.434 rows=651 loops=1)
+                           Recheck Cond: (city = 'Brisbane'::text)
+                           Heap Blocks: exact=59
+                           ->  Bitmap Index Scan on idx_customers_city  (cost=0.00..9.17 rows=651 width=0) (actual time=0.036..0.036 rows=651 loops=1)
+                                 Index Cond: (city = 'Brisbane'::text)
+         ->  Hash  (cost=195.00..195.00 rows=10000 width=13) (actual time=2.514..2.515 rows=10000 loops=1)
+               Buckets: 16384  Batches: 1  Memory Usage: 597kB
+               ->  Seq Scan on films f  (cost=0.00..195.00 rows=10000 width=13) (actual time=0.007..1.208 rows=10000 loops=1)
+ Planning Time: 0.446 ms
+ Execution Time: 46.115 ms
+(20 rows)
+
+                                                                      QUERY PLAN                                                                       
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=6575.27..6640.37 rows=26040 width=40) (actual time=46.263..47.446 rows=25939 loops=1)
+   Sort Key: r.rented_at DESC
+   Sort Method: quicksort  Memory: 2592kB
+   ->  Hash Join  (cost=404.60..4665.44 rows=26040 width=40) (actual time=3.401..40.928 rows=25939 loops=1)
+         Hash Cond: (r.film_id = f.film_id)
+         ->  Hash Join  (cost=84.60..4277.05 rows=26040 width=35) (actual time=0.487..32.330 rows=25939 loops=1)
+               Hash Cond: (r.customer_id = c.customer_id)
+               ->  Seq Scan on rentals r  (cost=0.00..3667.00 rows=200000 width=22) (actual time=0.007..12.951 rows=200000 loops=1)
+               ->  Hash  (cost=76.47..76.47 rows=651 width=21) (actual time=0.467..0.468 rows=651 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 44kB
+                     ->  Bitmap Heap Scan on customers c  (cost=9.33..76.47 rows=651 width=21) (actual time=0.056..0.358 rows=651 loops=1)
+                           Recheck Cond: (city = 'Brisbane'::text)
+                           Heap Blocks: exact=59
+                           ->  Bitmap Index Scan on idx_customers_city  (cost=0.00..9.17 rows=651 width=0) (actual time=0.038..0.038 rows=651 loops=1)
+                                 Index Cond: (city = 'Brisbane'::text)
+         ->  Hash  (cost=195.00..195.00 rows=10000 width=13) (actual time=2.899..2.899 rows=10000 loops=1)
+               Buckets: 16384  Batches: 1  Memory Usage: 597kB
+               ->  Seq Scan on films f  (cost=0.00..195.00 rows=10000 width=13) (actual time=0.005..1.457 rows=10000 loops=1)
+ Planning Time: 0.535 ms
+ Execution Time: 48.100 ms
+
+
+                                                                      QUERY PLAN                                                                       
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=6575.27..6640.37 rows=26040 width=40) (actual time=43.957..45.157 rows=25939 loops=1)
+   Sort Key: r.rented_at DESC
+   Sort Method: quicksort  Memory: 2592kB
+   ->  Hash Join  (cost=404.60..4665.44 rows=26040 width=40) (actual time=2.990..38.548 rows=25939 loops=1)
+         Hash Cond: (r.film_id = f.film_id)
+         ->  Hash Join  (cost=84.60..4277.05 rows=26040 width=35) (actual time=0.422..29.829 rows=25939 loops=1)
+               Hash Cond: (r.customer_id = c.customer_id)
+               ->  Seq Scan on rentals r  (cost=0.00..3667.00 rows=200000 width=22) (actual time=0.007..11.911 rows=200000 loops=1)
+               ->  Hash  (cost=76.47..76.47 rows=651 width=21) (actual time=0.403..0.404 rows=651 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 44kB
+                     ->  Bitmap Heap Scan on customers c  (cost=9.33..76.47 rows=651 width=21) (actual time=0.052..0.307 rows=651 loops=1)
+                           Recheck Cond: (city = 'Brisbane'::text)
+                           Heap Blocks: exact=59
+                           ->  Bitmap Index Scan on idx_customers_city  (cost=0.00..9.17 rows=651 width=0) (actual time=0.035..0.035 rows=651 loops=1)
+                                 Index Cond: (city = 'Brisbane'::text)
+         ->  Hash  (cost=195.00..195.00 rows=10000 width=13) (actual time=2.554..2.554 rows=10000 loops=1)
+               Buckets: 16384  Batches: 1  Memory Usage: 597kB
+               ->  Seq Scan on films f  (cost=0.00..195.00 rows=10000 width=13) (actual time=0.005..1.254 rows=10000 loops=1)
+ Planning Time: 0.450 ms
+ Execution Time: 45.788 ms
+
+  Sort  (cost=6575.27..6640.37 rows=26040 width=40) (actual time=47.412..48.666 rows=25939 loops=1)
+   Sort Key: r.rented_at DESC
+   Sort Method: quicksort  Memory: 2592kB
+   Buffers: shared hit=1824
+   ->  Hash Join  (cost=404.60..4665.44 rows=26040 width=40) (actual time=3.455..41.935 rows=25939 loops=1)
+         Hash Cond: (r.film_id = f.film_id)
+         Buffers: shared hit=1824
+         ->  Hash Join  (cost=84.60..4277.05 rows=26040 width=35) (actual time=0.482..33.096 rows=25939 loops=1)
+               Hash Cond: (r.customer_id = c.customer_id)
+               Buffers: shared hit=1729
+               ->  Seq Scan on rentals r  (cost=0.00..3667.00 rows=200000 width=22) (actual time=0.008..12.985 rows=200000 loops=1)
+                     Buffers: shared hit=1667
+               ->  Hash  (cost=76.47..76.47 rows=651 width=21) (actual time=0.462..0.463 rows=651 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 44kB
+                     Buffers: shared hit=62
+                     ->  Bitmap Heap Scan on customers c  (cost=9.33..76.47 rows=651 width=21) (actual time=0.054..0.343 rows=651 loops=1)
+                           Recheck Cond: (city = 'Brisbane'::text)
+                           Heap Blocks: exact=59
+                           Buffers: shared hit=62
+                           ->  Bitmap Index Scan on idx_customers_city  (cost=0.00..9.17 rows=651 width=0) (actual time=0.037..0.037 rows=651 loops=1)
+                                 Index Cond: (city = 'Brisbane'::text)
+                                 Buffers: shared hit=3
+         ->  Hash  (cost=195.00..195.00 rows=10000 width=13) (actual time=2.958..2.959 rows=10000 loops=1)
+               Buckets: 16384  Batches: 1  Memory Usage: 597kB
+               Buffers: shared hit=95
+               ->  Seq Scan on films f  (cost=0.00..195.00 rows=10000 width=13) (actual time=0.005..1.415 rows=10000 loops=1)
+                     Buffers: shared hit=95
+ Planning:
+   Buffers: shared hit=26
+ Planning Time: 0.727 ms
+ Execution Time: 49.411 ms
+(31 rows)
